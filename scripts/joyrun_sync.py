@@ -12,6 +12,7 @@ from hashlib import md5
 from urllib.parse import quote
 
 import gpxpy
+from numpy import source
 import polyline
 import requests
 from config import BASE_TIMEZONE, GPX_FOLDER, JSON_FILE, SQL_FILE, run_map, start_point
@@ -203,7 +204,8 @@ class Joyrun:
         gpx = gpxpy.gpx.GPX()
         gpx.nsmap["gpxtpx"] = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
         gpx_track = gpxpy.gpx.GPXTrack()
-        gpx_track.name = "gpx from keep"
+        timearr = time.localtime(start_time)
+        gpx_track.name = "Joyrun - " + str(time.strftime("%Y-%m-%d %H:%M",timearr))
         gpx.tracks.append(gpx_track)
 
         # Create first segment in our GPX track:
@@ -226,6 +228,9 @@ class Joyrun:
             auth=self.auth.reload(payload),
         )
         data = r.json()
+        # log
+        # print('print log------')
+        # print(str(data))
         return data
 
     def parse_raw_data_to_nametuple(self, run_data, old_gpx_ids, with_gpx=False):
@@ -263,7 +268,7 @@ class Joyrun:
         #     location_country = str(run_data["city"]) + " " + str(run_data["province"])
         d = {
             "id": int(joyrun_id),
-            "name": "run from joyrun",
+            "name": "Run from joyrun",
             # future to support others workout now only for run
             "type": "Run",
             "start_date": datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S"),
@@ -296,8 +301,15 @@ class Joyrun:
         tracks = []
         for i in new_run_ids:
             run_data = self.get_single_run_record(i)
+            if run_data["runrecord"]:
+               runrecord = run_data["runrecord"] 
+               if runrecord["source"]:
+                   source = runrecord["source"]
+                   if 'Suunto'  in source :
+                       continue
+                        
             track = self.parse_raw_data_to_nametuple(run_data, old_gpx_ids, with_gpx)
-            tracks.append(track)
+            tracks.append(track)            
         return tracks
 
 
